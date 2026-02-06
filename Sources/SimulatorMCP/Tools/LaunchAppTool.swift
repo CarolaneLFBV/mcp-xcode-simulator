@@ -11,16 +11,13 @@ enum LaunchAppTool {
             most Xcode projects, use run_project instead which triggers the full Xcode Run \
             pipeline with proper signing and environment setup.
             """,
-        inputSchema: .object([
-            "udid": .object([
-                "type": .string("string"),
-                "description": .string("The UDID of the booted simulator"),
-            ]),
-            "bundle_id": .object([
-                "type": .string("string"),
-                "description": .string("The bundle identifier of the app to launch (e.g. com.example.MyApp)"),
-            ]),
-        ])
+        inputSchema: jsonSchema(
+            properties: [
+                "udid": stringProperty("The UDID of the booted simulator"),
+                "bundle_id": stringProperty("The bundle identifier of the app to launch (e.g. com.example.MyApp)"),
+            ],
+            required: ["udid", "bundle_id"]
+        )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {

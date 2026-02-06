@@ -6,7 +6,7 @@ enum ListSimulatorsTool {
     static let definition = Tool(
         name: name,
         description: "List all available iOS simulators with their UDID, name, state, and runtime",
-        inputSchema: .object([:])
+        inputSchema: jsonSchema(properties: [:])
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {

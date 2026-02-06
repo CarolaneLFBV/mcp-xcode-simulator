@@ -6,16 +6,13 @@ enum TerminateAppTool {
     static let definition = Tool(
         name: name,
         description: "Terminate a running app on a booted simulator",
-        inputSchema: .object([
-            "udid": .object([
-                "type": .string("string"),
-                "description": .string("The UDID of the booted simulator"),
-            ]),
-            "bundle_id": .object([
-                "type": .string("string"),
-                "description": .string("The bundle identifier of the app to terminate"),
-            ]),
-        ])
+        inputSchema: jsonSchema(
+            properties: [
+                "udid": stringProperty("The UDID of the booted simulator"),
+                "bundle_id": stringProperty("The bundle identifier of the app to terminate"),
+            ],
+            required: ["udid", "bundle_id"]
+        )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {

@@ -12,15 +12,14 @@ enum RunProjectTool {
             or App Groups — simctl launch will crash these apps. Always prefer this over \
             launch_app or manual simctl launch commands.
             """,
-        inputSchema: .object([
-            "destination": .object([
-                "type": .string("string"),
-                "description": .string(
+        inputSchema: jsonSchema(
+            properties: [
+                "destination": stringProperty(
                     "Optional: simulator destination (e.g. 'iPhone 16 Pro'). "
                     + "If omitted, uses Xcode's currently selected destination."
                 ),
-            ]),
-        ])
+            ]
+        )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {

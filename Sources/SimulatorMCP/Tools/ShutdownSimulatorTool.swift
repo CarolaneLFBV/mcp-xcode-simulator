@@ -6,12 +6,12 @@ enum ShutdownSimulatorTool {
     static let definition = Tool(
         name: name,
         description: "Shutdown a running iOS simulator by its UDID",
-        inputSchema: .object([
-            "udid": .object([
-                "type": .string("string"),
-                "description": .string("The UDID of the simulator to shut down"),
-            ]),
-        ]),
+        inputSchema: jsonSchema(
+            properties: [
+                "udid": stringProperty("The UDID of the simulator to shut down"),
+            ],
+            required: ["udid"]
+        ),
         annotations: .init(readOnlyHint: false, openWorldHint: true)
     )
 

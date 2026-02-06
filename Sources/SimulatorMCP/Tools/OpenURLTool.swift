@@ -6,16 +6,13 @@ enum OpenURLTool {
     static let definition = Tool(
         name: name,
         description: "Open a URL (including deep links) in the simulator",
-        inputSchema: .object([
-            "udid": .object([
-                "type": .string("string"),
-                "description": .string("The UDID of the booted simulator"),
-            ]),
-            "url": .object([
-                "type": .string("string"),
-                "description": .string("The URL to open (e.g. https://example.com or myapp://path)"),
-            ]),
-        ])
+        inputSchema: jsonSchema(
+            properties: [
+                "udid": stringProperty("The UDID of the booted simulator"),
+                "url": stringProperty("The URL to open (e.g. https://example.com or myapp://path)"),
+            ],
+            required: ["udid", "url"]
+        )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {

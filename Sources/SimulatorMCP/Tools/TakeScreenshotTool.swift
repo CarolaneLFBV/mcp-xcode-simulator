@@ -7,12 +7,12 @@ enum TakeScreenshotTool {
     static let definition = Tool(
         name: name,
         description: "Take a screenshot of a booted simulator. Returns the image as base64-encoded PNG.",
-        inputSchema: .object([
-            "udid": .object([
-                "type": .string("string"),
-                "description": .string("The UDID of the booted simulator"),
-            ]),
-        ])
+        inputSchema: jsonSchema(
+            properties: [
+                "udid": stringProperty("The UDID of the booted simulator"),
+            ],
+            required: ["udid"]
+        )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {

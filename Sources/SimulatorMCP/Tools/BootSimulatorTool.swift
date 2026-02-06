@@ -6,12 +6,12 @@ enum BootSimulatorTool {
     static let definition = Tool(
         name: name,
         description: "Boot an iOS simulator by its UDID",
-        inputSchema: .object([
-            "udid": .object([
-                "type": .string("string"),
-                "description": .string("The UDID of the simulator to boot"),
-            ]),
-        ]),
+        inputSchema: jsonSchema(
+            properties: [
+                "udid": stringProperty("The UDID of the simulator to boot"),
+            ],
+            required: ["udid"]
+        ),
         annotations: .init(readOnlyHint: false, openWorldHint: true)
     )
 

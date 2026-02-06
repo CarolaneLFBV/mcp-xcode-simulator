@@ -6,16 +6,13 @@ enum SetAppearanceTool {
     static let definition = Tool(
         name: name,
         description: "Switch the simulator between light and dark mode",
-        inputSchema: .object([
-            "udid": .object([
-                "type": .string("string"),
-                "description": .string("The UDID of the booted simulator"),
-            ]),
-            "appearance": .object([
-                "type": .string("string"),
-                "description": .string("The appearance mode: 'light' or 'dark'"),
-            ]),
-        ])
+        inputSchema: jsonSchema(
+            properties: [
+                "udid": stringProperty("The UDID of the booted simulator"),
+                "appearance": stringProperty("The appearance mode: 'light' or 'dark'"),
+            ],
+            required: ["udid", "appearance"]
+        )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {

@@ -7,20 +7,14 @@ enum BuildProjectTool {
     static let definition = Tool(
         name: name,
         description: "Build an Xcode project for an iOS simulator. Returns the path to the built .app bundle.",
-        inputSchema: .object([
-            "project_path": .object([
-                "type": .string("string"),
-                "description": .string("Path to the Xcode project directory (containing .xcodeproj or .xcworkspace)"),
-            ]),
-            "scheme": .object([
-                "type": .string("string"),
-                "description": .string("The Xcode scheme to build"),
-            ]),
-            "device_name": .object([
-                "type": .string("string"),
-                "description": .string("Simulator device name (default: 'iPhone 16 Pro')"),
-            ]),
-        ])
+        inputSchema: jsonSchema(
+            properties: [
+                "project_path": stringProperty("Path to the Xcode project directory (containing .xcodeproj or .xcworkspace)"),
+                "scheme": stringProperty("The Xcode scheme to build"),
+                "device_name": stringProperty("Simulator device name (default: 'iPhone 16 Pro')"),
+            ],
+            required: ["project_path", "scheme"]
+        )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {

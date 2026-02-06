@@ -6,16 +6,13 @@ enum InstallAppTool {
     static let definition = Tool(
         name: name,
         description: "Install an app (.app bundle) on a booted simulator",
-        inputSchema: .object([
-            "udid": .object([
-                "type": .string("string"),
-                "description": .string("The UDID of the booted simulator"),
-            ]),
-            "app_path": .object([
-                "type": .string("string"),
-                "description": .string("The path to the .app bundle to install"),
-            ]),
-        ])
+        inputSchema: jsonSchema(
+            properties: [
+                "udid": stringProperty("The UDID of the booted simulator"),
+                "app_path": stringProperty("The path to the .app bundle to install"),
+            ],
+            required: ["udid", "app_path"]
+        )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {
