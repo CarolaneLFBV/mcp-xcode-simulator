@@ -15,10 +15,6 @@ actor ProcessRunner {
         try await run(command: "/usr/bin/xcrun", arguments: ["xcodebuild"] + arguments)
     }
 
-    func osascript(_ script: String) async throws -> Output {
-        try await run(command: "/usr/bin/osascript", arguments: ["-e", script])
-    }
-
     private func run(command: String, arguments: [String]) async throws -> Output {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: command)
@@ -29,10 +25,14 @@ actor ProcessRunner {
         process.standardOutput = stdoutPipe
         process.standardError = stderrPipe
 
+        // Read pipes concurrently to avoid deadlock when both buffers fill up
+        async let stdoutRead = readPipe(stdoutPipe)
+        async let stderrRead = readPipe(stderrPipe)
+
         try process.run()
 
-        let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-        let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+        let stdoutData = await stdoutRead
+        let stderrData = await stderrRead
 
         process.waitUntilExit()
 
@@ -52,5 +52,9 @@ actor ProcessRunner {
         }
 
         return output
+    }
+
+    private nonisolated func readPipe(_ pipe: Pipe) async -> Data {
+        pipe.fileHandleForReading.readDataToEndOfFile()
     }
 }

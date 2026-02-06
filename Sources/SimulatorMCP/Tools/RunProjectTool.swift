@@ -1,3 +1,4 @@
+import Foundation
 import MCP
 
 enum RunProjectTool {
@@ -6,72 +7,79 @@ enum RunProjectTool {
     static let definition = Tool(
         name: name,
         description: """
-            PREFERRED way to launch an app on the simulator. Triggers Xcode's Product > Run \
-            (Cmd+R), which handles build + install + launch in one step with the full Xcode \
-            execution context. This is required for apps using CloudKit, entitlements, Keychain, \
-            or App Groups — simctl launch will crash these apps. Always prefer this over \
-            launch_app or manual simctl launch commands.
+            Build, install, and launch an Xcode project on a simulator in one step. \
+            Handles the full pipeline: xcodebuild → simctl install → simctl launch. \
+            Use this instead of calling build_project, install_app, and launch_app separately.
             """,
         inputSchema: jsonSchema(
             properties: [
-                "destination": stringProperty(
-                    "Optional: simulator destination (e.g. 'iPhone 16 Pro'). "
-                    + "If omitted, uses Xcode's currently selected destination."
-                ),
-            ]
+                "project_path": stringProperty("Path to the Xcode project directory"),
+                "scheme": stringProperty("The Xcode scheme to build and run"),
+                "bundle_id": stringProperty("The app's bundle identifier (e.g. com.example.MyApp)"),
+                "device_name": stringProperty("Simulator name (default: 'iPhone 16 Pro')"),
+            ],
+            required: ["project_path", "scheme", "bundle_id"]
         )
     )
 
     static func run(arguments: [String: Value]?, runner: ProcessRunner) async throws -> CallTool.Result {
-        let destination = arguments?["destination"]?.stringValue
+        let projectPath = try requiredString("project_path", from: arguments)
+        let scheme = try requiredString("scheme", from: arguments)
+        let bundleId = try requiredString("bundle_id", from: arguments)
+        let deviceName = arguments?["device_name"]?.stringValue ?? "iPhone 16 Pro"
 
-        // If a destination is specified, set it in Xcode first
-        if let destination {
-            let setDestinationScript = """
-                tell application "Xcode"
-                    activate
-                end tell
-                tell application "System Events"
-                    tell process "Xcode"
-                        click menu item "Destination" of menu "Product" of menu bar 1
-                    end tell
-                end tell
-                """
-            // Setting destination via Xcode UI is fragile, so we just activate Xcode
-            // and note the requested destination in the response
-            _ = try? await runner.osascript("""
-                tell application "Xcode" to activate
-                """)
+        var steps: [String] = []
 
-            // Small delay to let Xcode come to foreground
-            try await Task.sleep(for: .milliseconds(500))
+        // Step 1: Find or boot a simulator
+        let destination = "platform=iOS Simulator,name=\(deviceName),OS=latest"
+        steps.append("[1/4] Using simulator: \(deviceName)")
 
-            _ = try? await runner.osascript(setDestinationScript)
-            _ = destination // acknowledge the parameter
+        // Step 2: Build
+        steps.append("[2/4] Building scheme '\(scheme)'...")
+
+        let fileManager = FileManager.default
+        let projectURL = URL(fileURLWithPath: projectPath)
+        let contents = (try? fileManager.contentsOfDirectory(atPath: projectPath)) ?? []
+
+        var buildArgs = [
+            "build",
+            "-scheme", scheme,
+            "-destination", destination,
+            "-derivedDataPath", "\(projectPath)/DerivedData",
+        ]
+
+        if let workspace = contents.first(where: { $0.hasSuffix(".xcworkspace") }) {
+            buildArgs += ["-workspace", projectURL.appendingPathComponent(workspace).path]
+        } else if let project = contents.first(where: { $0.hasSuffix(".xcodeproj") }) {
+            buildArgs += ["-project", projectURL.appendingPathComponent(project).path]
         }
 
-        // Trigger Product > Run via AppleScript
-        let runScript = """
-            tell application "Xcode"
-                activate
-            end tell
-            delay 0.3
-            tell application "System Events"
-                tell process "Xcode"
-                    click menu item "Run" of menu "Product" of menu bar 1
-                end tell
-            end tell
-            """
+        _ = try await runner.xcodebuild(buildArgs)
+        steps.append("[2/4] Build succeeded.")
 
-        _ = try await runner.osascript(runScript)
+        // Step 3: Install
+        let appPath = "\(projectPath)/DerivedData/Build/Products/Debug-iphonesimulator/\(scheme).app"
 
-        var result = "Xcode 'Product > Run' triggered successfully (equivalent to Cmd+R)."
-        if let destination {
-            result += "\nRequested destination: \(destination)"
-            result += "\nNote: Make sure the correct simulator is selected in Xcode's destination picker."
+        guard fileManager.fileExists(atPath: appPath) else {
+            throw SimulatorError.fileNotFound(appPath)
         }
-        result += "\nThe app is building and launching with Xcode's full execution context."
 
-        return CallTool.Result(content: [.text(result)])
+        steps.append("[3/4] Installing app on simulator...")
+        _ = try await runner.simctl("install", "booted", appPath)
+        steps.append("[3/4] App installed.")
+
+        // Step 4: Launch
+        steps.append("[4/4] Launching \(bundleId)...")
+        do {
+            _ = try await runner.simctl("launch", "--console-pty", "booted", bundleId)
+            steps.append("[4/4] App launched successfully.")
+        } catch let error as SimulatorError {
+            steps.append("[4/4] Launch failed: \(error.description)")
+            steps.append("")
+            steps.append("Tip: If the app crashes on launch, check ~/Library/Logs/DiagnosticReports/ for crash reports.")
+            return CallTool.Result(content: [.text(steps.joined(separator: "\n"))], isError: true)
+        }
+
+        return CallTool.Result(content: [.text(steps.joined(separator: "\n"))])
     }
 }
