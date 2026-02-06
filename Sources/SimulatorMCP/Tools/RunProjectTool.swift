@@ -6,9 +6,11 @@ enum RunProjectTool {
     static let definition = Tool(
         name: name,
         description: """
-            Run the active Xcode project in the simulator, equivalent to pressing Cmd+R \
-            (Product > Run). This uses Xcode's full execution context including debugger \
-            attachment and environment variables, unlike simctl launch.
+            PREFERRED way to launch an app on the simulator. Triggers Xcode's Product > Run \
+            (Cmd+R), which handles build + install + launch in one step with the full Xcode \
+            execution context. This is required for apps using CloudKit, entitlements, Keychain, \
+            or App Groups — simctl launch will crash these apps. Always prefer this over \
+            launch_app or manual simctl launch commands.
             """,
         inputSchema: .object([
             "destination": .object([

@@ -5,7 +5,12 @@ enum LaunchAppTool {
 
     static let definition = Tool(
         name: name,
-        description: "Launch an app on a booted simulator using its bundle identifier",
+        description: """
+            Launch an app on a booted simulator using simctl (low-level). WARNING: This will \
+            crash apps that depend on CloudKit, entitlements, Keychain, or App Groups. For \
+            most Xcode projects, use run_project instead which triggers the full Xcode Run \
+            pipeline with proper signing and environment setup.
+            """,
         inputSchema: .object([
             "udid": .object([
                 "type": .string("string"),
