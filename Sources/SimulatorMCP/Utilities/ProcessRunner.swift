@@ -15,6 +15,10 @@ actor ProcessRunner {
         try await run(command: "/usr/bin/xcrun", arguments: ["xcodebuild"] + arguments)
     }
 
+    func osascript(_ script: String) async throws -> Output {
+        try await run(command: "/usr/bin/osascript", arguments: ["-e", script])
+    }
+
     private func run(command: String, arguments: [String]) async throws -> Output {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: command)

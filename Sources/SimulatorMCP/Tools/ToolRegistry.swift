@@ -15,6 +15,7 @@ enum ToolRegistry {
             TakeScreenshotTool.definition,
             SetAppearanceTool.definition,
             OpenURLTool.definition,
+            RunProjectTool.definition,
         ]
     }
 
@@ -40,6 +41,8 @@ enum ToolRegistry {
             try await SetAppearanceTool.run(arguments: arguments, runner: runner)
         case OpenURLTool.name:
             try await OpenURLTool.run(arguments: arguments, runner: runner)
+        case RunProjectTool.name:
+            try await RunProjectTool.run(arguments: arguments, runner: runner)
         default:
             throw SimulatorError.unknownTool(name)
         }
